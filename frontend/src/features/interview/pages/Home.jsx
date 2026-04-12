@@ -6,7 +6,8 @@ import { useAuth } from '../../auth/hooks/useAuth'
 
 const Home = () => {
 
-    const { loading, generateReport,reports } = useInterview()
+    // Line 8 - add clearReports
+const { loading, generateReport, reports, clearReports } = useInterview()
     const [ jobDescription, setJobDescription ] = useState("")
     const [ selfDescription, setSelfDescription ] = useState("")
     const resumeInputRef = useRef()
@@ -133,19 +134,29 @@ const Home = () => {
 
             {/* Recent Reports List */}
             {reports.length > 0 && (
-                <section className='recent-reports'>
-                    <h2>My Recent Interview Plans</h2>
-                    <ul className='reports-list'>
-                        {reports.map(report => (
-                            <li key={report._id} className='report-item' onClick={() => navigate(`/interview/${report._id}`)}>
-                                <h3>{report.title || 'Untitled Position'}</h3>
-                                <p className='report-meta'>Generated on {new Date(report.createdAt).toLocaleDateString()}</p>
-                                <p className={`match-score ${report.matchScore >= 80 ? 'score--high' : report.matchScore >= 60 ? 'score--mid' : 'score--low'}`}>Match Score: {report.matchScore}%</p>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            )}
+    <section className='recent-reports'>
+        <div className='recent-reports__header'>
+            <h2>My Recent Interview Plans</h2>
+            <button className='clear-btn' onClick={clearReports}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+                Clear All
+            </button>
+        </div>
+        <ul className='reports-list'>
+            {reports.map(report => (
+                <li key={report._id} className='report-item' onClick={() => navigate(`/interview/${report._id}`)}>
+                    <h3>{report.title || 'Untitled Position'}</h3>
+                    <p className='report-meta'>Generated on {new Date(report.createdAt).toLocaleDateString()}</p>
+                    <p className={`match-score ${report.matchScore >= 80 ? 'score--high' : report.matchScore >= 60 ? 'score--mid' : 'score--low'}`}>Match Score: {report.matchScore}%</p>
+                </li>
+            ))}
+        </ul>
+    </section>
+)}
+
 
             {/* Page Footer */}
             <footer className='page-footer'>

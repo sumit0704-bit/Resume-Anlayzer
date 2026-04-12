@@ -95,5 +95,7 @@ export const useInterview = () => {
         else getReports();
     }, [interviewId]);
 
-    return { loading, report, reports, generateReport, getResumePdf };
-};
+   const clearReports = () => setReports([])
+
+return { loading, generateReport, reports, clearReports }
+}
