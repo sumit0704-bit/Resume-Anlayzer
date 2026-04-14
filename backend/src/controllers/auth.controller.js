@@ -11,11 +11,13 @@ async function registerUserController(req, res) {
         const { username, email, password } = req.body;
 
         if (!username || !email || !password) {
-            return res.status(400).json({ message: "Please provide username, email and password" });
+            return res
+                .status(400)
+                .json({ message: "Please provide username, email and password" });
         }
 
         const isUserAlreadyExists = await userModel.findOne({
-            $or: [{ username }, { email }]
+            $or: [{ username }, { email }],
         });
 
         if (isUserAlreadyExists) {
@@ -27,7 +29,7 @@ async function registerUserController(req, res) {
         const user = await userModel.create({
             username,
             email,
-            password: hash
+            password: hash,
         });
 
         const token = jwt.sign(
@@ -36,10 +38,20 @@ async function registerUserController(req, res) {
             { expiresIn: "1d" }
         );
 
-        res.cookie("token", token);
+        // ✅ consistent cookie options across register and login
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false,   // set true in production (HTTPS)
+            sameSite: "lax",
+        });
+
         res.status(201).json({
             message: "User registered successfully",
-            user: { id: user._id, username: user.username, email: user.email }
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+            },
         });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -50,49 +62,50 @@ async function registerUserController(req, res) {
  * @name loginUserController
  */
 async function loginUserController(req, res) {
-  try {
-    const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
 
-    const user = await userModel.findOne({ email });
+        if (!email || !password) {
+            return res
+                .status(400)
+                .json({ message: "Please provide email and password" }); // ✅ guard clause
+        }
 
-    if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" });
+        const user = await userModel.findOne({ email });
+
+        if (!user) {
+            return res.status(400).json({ message: "Invalid email or password" });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: "Invalid email or password" });
+        }
+
+        const token = jwt.sign(
+            { id: user._id, username: user.username },
+            process.env.JWT_SECRET,
+            { expiresIn: "1d" }
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false,   // set true in production (HTTPS)
+            sameSite: "lax",
+        });
+
+        res.status(200).json({
+            message: "User logged in successfully",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+            },
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: "Invalid email or password" });
-    }
-
-    // ✅ Generate token
-    const token = jwt.sign(
-      { id: user._id, username: user.username },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    // ✅ Set cookie properly
-    res.cookie("token", token, {
-      httpOnly: true,       // 🔒 prevents JS access (security)
-      secure: false,        // ⚠️ true in production (HTTPS)
-      sameSite: "lax",      // helps with frontend requests
-    });
-
-    // ✅ ALSO send token in response (very useful)
-    res.status(200).json({
-      message: "User logged in successfully",
-      token, // ⭐ important for Postman/frontend
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-      },
-    });
-
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
 }
 
 /**
@@ -117,19 +130,27 @@ async function logoutUserController(req, res) {
 async function getMeController(req, res) {
     try {
         const user = await userModel.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" }); // ✅ handle missing user
+        }
+
         res.status(200).json({
             message: "User details fetched successfully",
-            user: { id: user._id, username: user.username, email: user.email }
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+            },
         });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 }
 
-// Ensure all 4 functions are defined above before exporting them here
 module.exports = {
     registerUserController,
     loginUserController,
     logoutUserController,
-    getMeController
+    getMeController,
 };

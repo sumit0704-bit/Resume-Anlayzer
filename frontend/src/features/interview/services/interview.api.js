@@ -26,6 +26,16 @@ export const generateInterviewReport = async ({ jobDescription, selfDescription,
 
 }
 
+// ✅ ADD this function to your existing interview.api.js
+export async function deleteAllReports() {
+    try {
+        const res = await api.delete("/api/interview");
+        return res.data;
+    } catch (err) {
+        console.error("Delete Reports Error:", err?.response?.data || err.message);
+        throw err;
+    }
+}
 
 /**
  * @description Service to get interview report by interviewId.
